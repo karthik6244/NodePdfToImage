@@ -10,8 +10,8 @@ const uuidv1 = require("uuid/v1");
 const storage = require("azure-storage");
 
 var accessKey =
-  "B68hxXr/Bcc8CQc7DQrJ3cMl5IELx+XAuDZ5rEguzBbajMOCJr9b3Tq7FkGI6C+w2hq7q2f1g6JRegvuFkPuLQ==";
-var storageAccount = "storageaccountramndabfa";
+  "";
+var storageAccount = "";
 var containerName = "sourcepdf";
 var destContainerName = "targetimage";
 var blobService = storage.createBlobService(storageAccount, accessKey);
