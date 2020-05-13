@@ -75,9 +75,56 @@ module.exports = async function (context, myBlob) {
   const blockBlobClient = containerClient.getBlockBlobClient(
     context.bindingData.name
   );
+  context.log("Ext Name Is " + path.extname(targetDirectory));
+  let opts = {
+    format: "jpeg",
+    out_dir: path.dirname(targetDirectory),
+    out_prefix: path.basename(targetDirectory, path.extname(targetDirectory)),
+    page: null,
+  };
 
   const downloadBlockBlobResponse = await blockBlobClient.download(0);
-  streamToLocalFile(downloadBlockBlobResponse.readableStreamBody);
+  streamToLocalFile(downloadBlockBlobResponse.readableStreamBody).then(
+    (response) => {
+      return new Promise((resolve, reject) => {
+        pdf
+          .convert(sourceDirectory, opts)
+          .then((response) => {
+            context.log("Successfully converted");
+            async () => {
+              // let st = context.bindingData.name;
+              // let targetFileName =
+              //   st.substr(0, st.lastIndexOf(".")) + "-1" + ".jpg";
+              // context.log("Target File Name Is " + targetFileName);
+              tarDir = dirName + "\\targetimage\\";
+              context.log("Target Dir Is " + tarDir);
+              // context.log('Context IS:::: ' + context.executionContext.functionDirectory);
+              const files = await fs.promises.readdir(tarDir);
+              context.log(JSON.stringify(files));
+              let moveTo =
+                "https://storageaccountramndabfa.blob.core.windows.net/targetimage/";
+              const ONE_MINUTE = 60 * 1000;
+              const aborter = AbortController.timeout(30 * ONE_MINUTE);
+              const destcontainerClient = await blobServiceClient.getContainerClient(
+                destContainerName
+              );
+
+              for (const file of files) {
+                context.log(file);
+                await uploadLocalFile(
+                  aborter,
+                  destcontainerClient,
+                  path.join(tarDir, file)
+                );
+              }
+            };
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      });
+    }
+  );
 
   // context.log('URI is ' + context.bindingData.uri);
   // context.log('Name is ' + context.bindingData.name);
@@ -86,45 +133,8 @@ module.exports = async function (context, myBlob) {
   // var fileName = 'sample.pdf';
   //  var blobName = 'sourcepdf';
 
-  let opts = {
-    format: "jpeg",
-    out_dir: path.dirname(targetDirectory),
-    out_prefix: path.basename(targetDirectory, path.extname(targetDirectory)),
-    page: null,
-  };
   // // context.log(file);
-  const res = pdf
-    .convert(sourceDirectory, opts)
-    .then((res) => {
-      context.log("Successfully converted");
-    })
-    .catch((error) => {
-      console.error(error);
-    });
-  context.log("Response Is " + JSON.stringify(res));
-  let st = context.bindingData.name;
-  let targetFileName = st.substr(0, st.lastIndexOf(".")) + "-1" + ".jpg";
-  context.log("Target File Name Is " + targetFileName);
-  tarDir = dirName + "\\targetimage\\";
-  context.log("Target Dir Is " + tarDir);
-  // context.log('Context IS:::: ' + context.executionContext.functionDirectory);
-  const files = await fs.promises.readdir(tarDir);
-  context.log(JSON.stringify(files));
-  let moveTo =
-    "https://storageaccountramndabfa.blob.core.windows.net/targetimage/";
-  const ONE_MINUTE = 60 * 1000;
-  const aborter = AbortController.timeout(30 * ONE_MINUTE);
-  const destcontainerClient = await blobServiceClient.getContainerClient(
-    destContainerName
-  );
-
-  for (const file of files) {
-    await uploadLocalFile(
-      aborter,
-      destcontainerClient,
-      path.join(tarDir, file)
-    );
-    /*
+  /*
         context.log(file + ":::" + tarDir);
         const frompath = path.join(tarDir,file);
         const toPath =  moveTo + file;
@@ -139,7 +149,7 @@ module.exports = async function (context, myBlob) {
             }
         );
         */
-  }
+  //}
   // context.log(path.extname(targetDirectory));
   // context.log(path.basename(targetDirectory, path.extname(targetDirectory)));
   // const ONE_MINUTE = 60 * 1000;
