@@ -31,7 +31,7 @@ module.exports = async function (context, myBlob) {
       filePath = path.resolve(filePath);
 
       const fileName = path.basename(filePath);
-      context.log("Ram Func " + fileName);
+      context.log("Func " + fileName);
       const blobClient = containerClient.getBlobClient(fileName);
       const blockBlobClient = blobClient.getBlockBlobClient();
       // context.log(blockBlobClient);
@@ -97,41 +97,51 @@ module.exports = async function (context, myBlob) {
                 else
                   context.log(`Done Deleting Source File ${sourceDirectory}`);
               });
-              // console.log("Converted");
-              // context.log("Successfully converted");
-              tarDir = dirName + "\\targetimage\\";
-              let moveTo =
-                "https://storageaccountramndabfa.blob.core.windows.net/targetimage/";
-              const ONE_MINUTE = 60 * 1000;
-              const aborter = AbortController.timeout(30 * ONE_MINUTE);
-
-              (async () => {
-                // let st = context.bindingData.name;
-                // let targetFileName =
-                //   st.substr(0, st.lastIndexOf(".")) + "-1" + ".jpg";
-                // context.log("Target File Name Is " + targetFileName);
-                // context.log("Target Dir Is " + tarDir);
+              console.log("Converted");
+              context.log("Successfully converted");
+              resolve(response);
+            })
+            .then((response) => {
+              return new Promise((resolve, reject) => {
+                tarDir = dirName + "\\targetimage\\";
+                console.log("Target Dir Is " + tarDir);
                 // context.log('Context IS:::: ' + context.executionContext.functionDirectory);
-                // context.log(JSON.stringify(files));
-                const files = await fs.promises.readdir(tarDir);
-
-                const destcontainerClient = await blobServiceClient.getContainerClient(
+                const files = fs.promises.readdir(tarDir);
+                console.log(JSON.stringify(files));
+                let moveTo =
+                  "https://storageaccountramndabfa.blob.core.windows.net/targetimage/";
+                const ONE_MINUTE = 60 * 1000;
+                const aborter = AbortController.timeout(30 * ONE_MINUTE);
+                const destcontainerClient = blobServiceClient.getContainerClient(
                   destContainerName
                 );
+
                 for (const file of files) {
-                  // context.log(file);
-                  await uploadLocalFile(
+                  context.log(file);
+                  uploadLocalFile(
                     aborter,
                     destcontainerClient,
                     path.join(tarDir, file)
                   );
                 }
-              })();
-            })
-            .catch((error) => {
-              console.error(error);
+                resolve(response);
+              });
             });
+        }).catch((error) => {
+          console.log(error);
         });
+        // async () => {
+        // let st = context.bindingData.name;
+        // let targetFileName =
+        //   st.substr(0, st.lastIndexOf(".")) + "-1" + ".jpg";
+        // context.log("Target File Name Is " + targetFileName);
+        // // // };
+        // // // })
+        // // // .catch((error) => {
+        // // //   console.error(error);
+        // // // });
+        // // // });
+        resolve(response);
       }
     );
 
